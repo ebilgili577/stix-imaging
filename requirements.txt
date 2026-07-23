@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+numpy
+astropy
+sunpy
+stixpy
+tensorflow
+matplotlib
+pydantic
