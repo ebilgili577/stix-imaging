@@ -27,7 +27,7 @@ def hpc_to_stix(hpc_x: float, hpc_y: float, t_center, observer) -> dict:
 def get_hpc_coords(flare_loc: SkyCoord, t_center, observer):
     """Transform a STIXImaging SkyCoord to Helioprojective at ``t_center``."""
     flare_hpc = flare_loc.transform_to(
-        Helioprojective(ovserver=observer, obstime=t_center)
+        Helioprojective(observer=observer, obstime=t_center)
     )
     return flare_hpc
 

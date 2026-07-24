@@ -1,5 +1,5 @@
-__pycache__
-.vscode
-*.ipynb
+__pycache__/
+.vscode/
 *.keras
-viz-playground
+viz-playground/
+data/

@@ -75,11 +75,6 @@ def extract_counts(l1_json: dict, selection: Selection) -> np.ndarray:
     return counts[DETECTOR_ORDER - 1]
 
 
-# ---------------------------------------------------------------------------
-# Visibility path — stixpy adapter
-# ---------------------------------------------------------------------------
-
-
 def extract_visibilities(l1_json: dict, selection: Selection):
     """Return uncalibrated stixpy Visibilities for the given selection.
 

@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 """ 
-Module for evaluating quality of predicted flare image.
 Author: Paolo Massa
 """
 

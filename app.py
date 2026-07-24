@@ -4,6 +4,7 @@ import contextlib
 import os
 from pathlib import Path
 
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from tensorflow.keras.saving import load_model
 
@@ -26,7 +27,7 @@ async def lifespan(app: FastAPI):
         mlp_model = load_model(str(MLP_MODEL_PATH), compile=False)
         print(f"[startup] MLP loaded: {MLP_MODEL_PATH}", flush=True)
         print(f"[startup] MLP input shape: {mlp_model.input_shape}", flush=True)
-    except Exception as exc: # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
         print(f"[startup] MLP load failed: {exc}", flush=True)
         mlp_model = None
     try:
@@ -36,7 +37,7 @@ async def lifespan(app: FastAPI):
             compile=False,
         )
         print(f"[startup] FCD loaded: {FCD_MODEL_PATH}", flush=True)
-    except Exception as exc: # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
         print(f"[startup] FCD load failed: {exc}", flush=True)
         fcd_model = None
     yield
@@ -72,8 +73,6 @@ def imaging(request: ImagingRequest):
 
 
 if __name__ == "__main__":
-    import uvicorn
-
     host = os.environ.get("FCD_SERVICE_HOST", "0.0.0.0")
     port = int(os.environ.get("FCD_SERVICE_PORT", "8008"))
     uvicorn.run("app:app", host=host, port=port, reload=False)
