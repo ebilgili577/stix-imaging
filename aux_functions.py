@@ -1,8 +1,11 @@
-import os
 import numpy as np
-from scipy.io import readsav
+import astropy.units as u
 import matplotlib.pyplot as plt
 
+""" 
+Module for evaluating quality of predicted flare image.
+Author: Paolo Massa
+"""
 
 def Fourier_matrix_STIX(u, v, n_pix, pix_size):
     """

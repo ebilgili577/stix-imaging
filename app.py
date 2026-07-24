@@ -1,11 +1,3 @@
-"""FCD imaging service.
-
-Run from fcd-imaging-service/:
-    uvicorn app:app --host 0.0.0.0 --port 8008 --reload
-
-Or as a script (no --reload):
-    python app.py
-"""
 from __future__ import annotations
 
 import contextlib
@@ -19,9 +11,9 @@ from filters import GaussianFilter
 from pipeline import run_imaging_pipeline
 from schemas import ImagingRequest
 
-ROOT = Path(__file__).resolve().parent
-MLP_MODEL_PATH = ROOT / 'models' / 'mlp9col.keras'
-FCD_MODEL_PATH = ROOT.parent / 'fcd' / 'models' / 'fcd.keras'
+MODELS_PATH = Path(__file__).resolve().parent / 'models'
+MLP_MODEL_PATH = MODELS_PATH / 'mlp9col.keras'
+FCD_MODEL_PATH = MODELS_PATH / 'fcd.keras'
 
 mlp_model = None
 fcd_model = None
@@ -72,7 +64,8 @@ def imaging(request: ImagingRequest):
             request.selection,
             mlp_model,
             fcd_model,
-            user_hpc=request.user_hpc,
+            user_hpc_x = request.user_hpc_x,
+            user_hpc_y = request.user_hpc_y,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

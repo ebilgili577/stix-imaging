@@ -2,6 +2,10 @@ import tensorflow as tf
 from tensorflow.keras.layers import Layer
 
 
+"""
+Author: Merve Selcuk Simsek
+"""
+
 
 class GaussianFilter(Layer):
     def __init__(self, kernel_size=5, sigma=1.0, **kwargs):

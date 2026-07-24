@@ -1,5 +1,7 @@
 """HTTP request/response schemas."""
 
+from __future__ import annotations
+
 from pydantic import BaseModel, Field
 
 
@@ -10,17 +12,8 @@ class Selection(BaseModel):
     e_channel_max: int
 
 
-class UserHpc(BaseModel):
-    """Optional user-supplied source location in helioprojective arcsec."""
-
-    hpc_x: float
-    hpc_y: float
-
-
 class ImagingRequest(BaseModel):
     selection: Selection
     l1_json: dict = Field(..., description='In-memory L1 CPD JSON from the BSD UI')
-    user_hpc: UserHpc | None = Field(
-        default=None,
-        description='If set, use this HPC location as the imaging phase center',
-    )
+    user_hpc_x: float | None = None
+    user_hpc_y: float | None = None
