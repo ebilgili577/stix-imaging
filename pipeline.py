@@ -24,7 +24,6 @@ def run_imaging_pipeline(
     user_hpc_x=None,
     user_hpc_y=None,
 ):
-
     result = {}
 
     raw_counts = extract_counts(l1_json, selection)

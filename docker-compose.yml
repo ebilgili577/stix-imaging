@@ -1,0 +1,9 @@
+services:
+  fcd-imaging:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - ${MODELS_DIR}:/app/models

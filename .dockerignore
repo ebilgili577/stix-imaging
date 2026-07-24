@@ -1,0 +1,23 @@
+**/__pycache__
+**/*.pyc
+**/*.pyo
+
+# Notebooks and playground dirs
+*.ipynb
+viz-playground/
+data/
+
+# Keras weights are mounted at runtime, not baked into the image
+models/
+
+# PyTorch model checkpoint (not used by this service)
+*.pt
+
+# Git metadata
+.git
+.gitignore
+
+# Local dev / editor artifacts
+.env
+.venv
+*.egg-info

@@ -45,7 +45,6 @@ def Fourier_matrix_STIX(u, v, n_pix, pix_size):
 
 
 def stx_plot_vis_fit(vis, vis_pred, sigamp):
-
     # Compute amplitude and phase of the observed visibilities
     re_vis = vis[0:24]
     im_vis = vis[24:]
@@ -214,7 +213,6 @@ def stx_plot_vis_fit(vis, vis_pred, sigamp):
 
 
 def compute_chi2(vis, vis_pred, sigamp):
-
     # Compute amplitude and phase of the observed visibilities
     re_vis = vis[0:24]
     im_vis = vis[24:]
