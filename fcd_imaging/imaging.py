@@ -10,12 +10,12 @@ from __future__ import annotations
 import astropy.units as u
 import numpy as np
 from astropy.coordinates import SkyCoord
-from coords import get_hpc_coords
+from .coords import get_hpc_coords
 from stixpy.calibration.visibility import calibrate_visibility
 from stixpy.coordinates.frames import STIXImaging
 from sunpy.map import Map, make_fitswcs_header
 
-from aux_functions import Fourier_matrix_STIX, compute_chi2
+from .aux_functions import Fourier_matrix_STIX, compute_chi2
 
 # FCD was trained on 24 visibilities (rings 3–10, a/b/c each), not stixpy's full 30.
 # Label order matches fcd/integration_utils.py and the STIX L3A .sav training format.

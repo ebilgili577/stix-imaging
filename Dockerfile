@@ -5,9 +5,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY *.py ./
+COPY config.py ./
+COPY fcd_imaging/ fcd_imaging/
 
 EXPOSE 8008
 
-ENTRYPOINT ["python"]
-CMD ["app.py"]
+CMD ["python", "-m", "fcd_imaging.app"]

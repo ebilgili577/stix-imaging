@@ -12,8 +12,8 @@ from stixpy.calibration.visibility import (
 )
 from sunpy.time import TimeRange
 
-from l1_pixel_data import pixel_data_from_l1_json
-from schemas import Selection
+from .l1 import pixel_data_from_l1_json
+from .schemas import Selection
 
 # 1-based detector IDs in training column order (stix_train DETECTOR_ORDER).
 # extract_counts reorders the 32-detector L1 array to this row order.

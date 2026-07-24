@@ -7,9 +7,9 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from tensorflow.keras.saving import load_model
 
-from filters import GaussianFilter
-from pipeline import run_imaging_pipeline
-from schemas import ImagingRequest
+from .filters import GaussianFilter
+from .pipeline import run_imaging_pipeline
+from .schemas import ImagingRequest
 
 mlp_model = None
 fcd_model = None
@@ -71,5 +71,5 @@ def imaging(request: ImagingRequest):
 
 if __name__ == "__main__":
     uvicorn.run(
-        "app:app", host="0.0.0.0", port=settings.PORT, reload=True
+        "fcd_imaging.app:app", host="0.0.0.0", port=settings.PORT, reload=True
     )  # hot reload on for debugging

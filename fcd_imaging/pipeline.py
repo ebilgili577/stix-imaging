@@ -4,16 +4,16 @@ import astropy.units as u
 from stixpy.coordinates.transforms import get_hpc_info
 from sunpy.coordinates import HeliographicStonyhurst
 
-from coords import get_sun_radius, hpc_to_stix
-from extract import extract_counts, extract_visibilities
-from fcd_imaging import (
+from .coords import get_sun_radius, hpc_to_stix
+from .extract import extract_counts, extract_visibilities
+from .imaging import (
     calc_chi_score,
     calibrate_visibilities,
     predict_image,
     rotate_image,
 )
-from mlp_location import predict_location
-from schemas import Selection
+from .location import predict_location
+from .schemas import Selection
 
 
 def run_imaging_pipeline(
