@@ -14,6 +14,6 @@ class Selection(BaseModel):
 
 class ImagingRequest(BaseModel):
     selection: Selection
-    l1_json: dict = Field(..., description='In-memory L1 CPD JSON from the BSD UI')
+    l1_json: dict = Field(..., description="In-memory L1 CPD JSON from the BSD UI")
     user_hpc_x: float | None = None
     user_hpc_y: float | None = None

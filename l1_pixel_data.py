@@ -21,17 +21,17 @@ energies : QTable with columns e_low, e_high [keV], n_e rows
 energy_masks : SimpleNamespace with .energy_mask : bool ndarray shape (32,)
 time_range : sunpy TimeRange
 """
+
 from __future__ import annotations
 
 from types import SimpleNamespace
 
-import numpy as np
 import astropy.units as u
+import numpy as np
 from astropy.table import QTable
 from astropy.time import Time
-from sunpy.time import TimeRange
-
 from stixpy.calibration.energy import get_sci_channels
+from sunpy.time import TimeRange
 
 
 def pixel_data_from_l1_json(l1_json: dict) -> SimpleNamespace:
@@ -47,9 +47,9 @@ def pixel_data_from_l1_json(l1_json: dict) -> SimpleNamespace:
     SimpleNamespace
         Duck-typed pixel_data object accepted by stixpy create_meta_pixels.
     """
-    boxes = [b for b in l1_json['boxes'] if 'time' in b and 'counts' in b]
+    boxes = [b for b in l1_json["boxes"] if "time" in b and "counts" in b]
     if not boxes:
-        raise ValueError('No usable time boxes found in L1 JSON')
+        raise ValueError("No usable time boxes found in L1 JSON")
 
     n_t = len(boxes)
 
@@ -58,12 +58,12 @@ def pixel_data_from_l1_json(l1_json: dict) -> SimpleNamespace:
     # energy_bins: [[ch, ch], ...] — single-channel bins only
     # Channel numbers are 0-based STIX science channel indices.
     # ------------------------------------------------------------------
-    energy_bins_raw = l1_json['energy_bins']
+    energy_bins_raw = l1_json["energy_bins"]
     for e1, e2 in energy_bins_raw:
         if int(e1) != int(e2):
             raise ValueError(
-                f'Multi-channel energy bin [{e1}, {e2}] is not supported; '
-                'only single-channel bins (e1 == e2) are handled.'
+                f"Multi-channel energy bin [{e1}, {e2}] is not supported; "
+                "only single-channel bins (e1 == e2) are handled."
             )
     chan_nums = [int(e[0]) for e in energy_bins_raw]
     n_e = len(chan_nums)
@@ -71,17 +71,19 @@ def pixel_data_from_l1_json(l1_json: dict) -> SimpleNamespace:
 
     # Nominal energy edges in keV from the stixpy science-channel table.
     # The table is date-dependent and internally cached by stixpy.
-    first_time = Time(float(boxes[0]['time']), format='unix')
+    first_time = Time(float(boxes[0]["time"]), format="unix")
     sci_ch = get_sci_channels(first_time)
 
-    ch_arr = np.asarray(sci_ch['Channel Number'])
+    ch_arr = np.asarray(sci_ch["Channel Number"])
     sel_mask = np.isin(ch_arr, chan_nums)
     sel_sci = sci_ch[sel_mask]
 
-    energies = QTable({
-        'e_low': sel_sci['Elower'],
-        'e_high': sel_sci['Eupper'],
-    })
+    energies = QTable(
+        {
+            "e_low": sel_sci["Elower"],
+            "e_high": sel_sci["Eupper"],
+        }
+    )
 
     # energy_mask: shape (32,) bool
     # Marks which of the 32 STIX science channels are present in this data.
@@ -93,17 +95,19 @@ def pixel_data_from_l1_json(l1_json: dict) -> SimpleNamespace:
     # ------------------------------------------------------------------
     # Per-box data arrays
     # ------------------------------------------------------------------
-    times_unix = np.array([float(b['time']) for b in boxes])
-    integrations = np.array([float(b['integrations']) for b in boxes])
-    rcr_arr = np.array([int(b.get('rcr', 0)) for b in boxes])
-    triggers_arr = np.array([b['triggers'] for b in boxes], dtype=np.float64)  # (n_t, 16)
+    times_unix = np.array([float(b["time"]) for b in boxes])
+    integrations = np.array([float(b["integrations"]) for b in boxes])
+    rcr_arr = np.array([int(b.get("rcr", 0)) for b in boxes])
+    triggers_arr = np.array(
+        [b["triggers"] for b in boxes], dtype=np.float64
+    )  # (n_t, 16)
 
     # counts: (n_t, 32 detectors, 12 pixels, n_e energy channels) in ct.
     # L1 JSON delivers 8 big pixels per detector (256-element flat) or
     # 12 pixels (384-element flat). Big pixels fill columns 0–7 of dim 2.
     counts_raw = np.zeros((n_t, 32, 12, n_e), dtype=np.float64)
     for t_i, box in enumerate(boxes):
-        for entry in box['counts']:
+        for entry in box["counts"]:
             ch = int(entry[0])
             if ch not in chan_to_idx:
                 continue
@@ -117,7 +121,7 @@ def pixel_data_from_l1_json(l1_json: dict) -> SimpleNamespace:
                 counts_raw[t_i, :, :8, e_idx] = flat.reshape(32, 8)
             else:
                 raise ValueError(
-                    f'Unexpected pixel count length {n} (expected 256 or 384)'
+                    f"Unexpected pixel count length {n} (expected 256 or 384)"
                 )
 
     duration = integrations * u.s
@@ -128,20 +132,22 @@ def pixel_data_from_l1_json(l1_json: dict) -> SimpleNamespace:
 
     # pixel_masks / detector_masks: stixpy only checks they are constant across the
     # selected time range, so a single replicated scalar satisfies the check.
-    pixel_masks_val = int(sum(l1_json.get('pixel_mask', [0xFF])))
-    detector_masks_val = int(l1_json.get('detector_mask', 0xFFFFFFFF))
+    pixel_masks_val = int(sum(l1_json.get("pixel_mask", [0xFF])))
+    detector_masks_val = int(l1_json.get("detector_mask", 0xFFFFFFFF))
 
-    data = QTable({
-        'counts': counts_qty,
-        'counts_comp_err': zeros_qty,
-        'triggers': triggers_arr,
-        'timedel': duration,
-        'rcr': rcr_arr,
-        'pixel_masks': np.full(n_t, pixel_masks_val, dtype=int),
-        'detector_masks': np.full(n_t, detector_masks_val, dtype=int),
-    })
+    data = QTable(
+        {
+            "counts": counts_qty,
+            "counts_comp_err": zeros_qty,
+            "triggers": triggers_arr,
+            "timedel": duration,
+            "rcr": rcr_arr,
+            "pixel_masks": np.full(n_t, pixel_masks_val, dtype=int),
+            "detector_masks": np.full(n_t, detector_masks_val, dtype=int),
+        }
+    )
 
-    times = Time(times_unix, format='unix')
+    times = Time(times_unix, format="unix")
     t_starts = times - duration / 2
     t_ends = times + duration / 2
     time_range = TimeRange(t_starts[0], t_ends[-1])

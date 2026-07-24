@@ -1,7 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Layer
 
-
 """
 Author: Merve Selcuk Simsek
 """
@@ -9,7 +8,7 @@ Author: Merve Selcuk Simsek
 
 class GaussianFilter(Layer):
     def __init__(self, kernel_size=5, sigma=1.0, **kwargs):
-        super(GaussianFilter, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.kernel_size = kernel_size
         self.sigma = sigma
 
@@ -27,12 +26,14 @@ class GaussianFilter(Layer):
         self.built = True
 
     def call(self, inputs):
-        return tf.nn.depthwise_conv2d(inputs, self.kernel, strides=[1, 1, 1, 1], padding='SAME')
+        return tf.nn.depthwise_conv2d(
+            inputs, self.kernel, strides=[1, 1, 1, 1], padding="SAME"
+        )
 
     def compute_output_shape(self, input_shape):
         return input_shape
 
     def get_config(self):
-        config = super(GaussianFilter, self).get_config()
-        config.update({'kernel_size': self.kernel_size, 'sigma': self.sigma})
+        config = super().get_config()
+        config.update({"kernel_size": self.kernel_size, "sigma": self.sigma})
         return config

@@ -1,4 +1,4 @@
-""" Module for imaging related functions.
+"""Module for imaging related functions.
 - Visibilities and calibration
 - Image prediction
 - Image rotation
@@ -6,28 +6,27 @@
 
 from __future__ import annotations
 
-import numpy as np
 import astropy.units as u
+import numpy as np
 from astropy.coordinates import SkyCoord
-from sunpy.map import Map, make_fitswcs_header
+from coords_util import get_hpc_coords
 from stixpy.calibration.visibility import calibrate_visibility
 from stixpy.coordinates.frames import STIXImaging
-from coords_util import get_hpc_coords
-from aux_functions import Fourier_matrix_STIX, compute_chi2
+from sunpy.map import Map, make_fitswcs_header
 
+from aux_functions import Fourier_matrix_STIX, compute_chi2
 
 # FCD was trained on 24 visibilities (rings 3–10, a/b/c each), not stixpy's full 30.
 # Label order matches fcd/integration_utils.py and the STIX L3A .sav training format.
 FCD_VIS_LABELS: tuple[str, ...] = tuple(
-    f'{ring}{suffix}' for ring in range(10, 2, -1) for suffix in 'abc'
+    f"{ring}{suffix}" for ring in range(10, 2, -1) for suffix in "abc"
 )
-
 
 
 def predict_image(cal_vis, fcd) -> list:
     """Run FCD on a (48,) Re/Im vector; return flattened 128×128 list."""
     if fcd is None:
-        raise RuntimeError('FCD model not loaded')
+        raise RuntimeError("FCD model not loaded")
     fcd_input = visibilities_to_fcd_input(cal_vis)
     predicted = np.squeeze(fcd.predict(fcd_input.reshape(1, -1), verbose=0))
     return predicted.tolist()
@@ -52,10 +51,8 @@ def rotate_image(flat_image: list[float], hpc_coord: SkyCoord, roll):
     hp_map = Map((img, header_hp))
     hp_map_rotated = hp_map.rotate()
 
-    # fill nan with 0z for json serialization
-    data = np.nan_to_num(
-        np.asarray(hp_map_rotated.data, dtype=np.float64)
-    )
+    # fill nan with 0z for json serialization
+    data = np.nan_to_num(np.asarray(hp_map_rotated.data, dtype=np.float64))
     ny, nx = data.shape
     px = np.arange(nx) * u.pix
     py = np.arange(ny) * u.pix
@@ -71,17 +68,16 @@ def rotate_image(flat_image: list[float], hpc_coord: SkyCoord, roll):
     }
 
 
-
 def calibrate_visibilities(vis, location: dict, t_center, observer):
-    """calibrates visibilities for fcd input and returns the locations used for calibrating in hpc frame.
-    """
+    """calibrates visibilities for fcd input and returns the locations used for calibrating in hpc frame."""
     flare_loc = SkyCoord(
-        location['location_x_arcsec'] * u.arcsec,
-        location['location_y_arcsec'] * u.arcsec,
+        location["location_x_arcsec"] * u.arcsec,
+        location["location_y_arcsec"] * u.arcsec,
         frame=STIXImaging(obstime=t_center),
     )
-    return calibrate_visibility(vis, flare_loc), get_hpc_coords(flare_loc, t_center, observer)
-
+    return calibrate_visibility(vis, flare_loc), get_hpc_coords(
+        flare_loc, t_center, observer
+    )
 
 
 def visibilities_to_fcd_input(cal_vis) -> np.ndarray:
@@ -92,11 +88,11 @@ def visibilities_to_fcd_input(cal_vis) -> np.ndarray:
     the STIX L3A .sav format used during FCD training.
     Layout: [Re(24), Im(24)].
     """
-    labels = [str(label) for label in cal_vis.meta['vis_labels']]
+    labels = [str(label) for label in cal_vis.meta["vis_labels"]]
     by_label = {label: value for label, value in zip(labels, cal_vis.visibilities)}
     missing = [label for label in FCD_VIS_LABELS if label not in by_label]
     if missing:
-        raise ValueError(f'Missing FCD visibility labels: {missing}')
+        raise ValueError(f"Missing FCD visibility labels: {missing}")
     v = np.asarray([by_label[label] for label in FCD_VIS_LABELS])
     return np.hstack((np.real(v), np.imag(v))).astype(np.float32)
 
@@ -110,7 +106,7 @@ def calc_chi_score(cal_vis, image):
     """
     mem_im = np.array(image).reshape(128, 128)
 
-    labels = [str(label) for label in cal_vis.meta['vis_labels']]
+    labels = [str(label) for label in cal_vis.meta["vis_labels"]]
     idx = [labels.index(lab) for lab in FCD_VIS_LABELS]
 
     vis = visibilities_to_fcd_input(cal_vis)  # 48-dim: Re then Im
@@ -123,7 +119,7 @@ def calc_chi_score(cal_vis, image):
     # compare amp visibilities of reconstructed image
     # send example to paolo with example, raw image,
 
-    n_pix = 128     # FCD output size
+    n_pix = 128  # FCD output size
     pix_size = 2.0  # arcsec / pixel
 
     F = Fourier_matrix_STIX(uu, vv, n_pix, pix_size)
