@@ -45,13 +45,13 @@ def run_imaging_pipeline(
     cal_vis, phase_loc_hpc = calibrate_visibilities(
         vis, phase_loc_stix, t_center, observer
     )
-    flat_image = predict_image(cal_vis, fcd_model)
+    flat_image, norm_img, norm_vis = predict_image(cal_vis, fcd_model)
     rotated_image = rotate_image(flat_image, phase_loc_hpc, roll)
 
-    result["image"] = flat_image
+    result["image"] = norm_img
     result["rotated_image"] = rotated_image
     result["sun_radius"] = get_sun_radius(observer)
-    result["chi_score"] = calc_chi_score(cal_vis, flat_image)
+    result["chi_score"] = calc_chi_score(cal_vis, flat_image, norm_img, norm_vis)
     result["mlp_stix_x"] = float(
         pred_location["location_x_arcsec"]
     )  ## TODO: rename, also in pred loc fun

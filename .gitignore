@@ -4,3 +4,5 @@ __pycache__/
 viz-playground/
 data/
 .env
+untracked/
+.ruff_cache

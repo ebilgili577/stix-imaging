@@ -1,3 +1,6 @@
+import matplotlib
+
+matplotlib.use("Agg")  # headless-safe for FastAPI / pipeline PNG dumps
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -44,7 +47,7 @@ def Fourier_matrix_STIX(u, v, n_pix, pix_size):
     return F * pix_size**2
 
 
-def stx_plot_vis_fit(vis, vis_pred, sigamp):
+def stx_plot_vis_fit(vis, vis_pred, sigamp, plotname):
     # Compute amplitude and phase of the observed visibilities
     re_vis = vis[0:24]
     im_vis = vis[24:]
@@ -208,8 +211,13 @@ def stx_plot_vis_fit(vis, vis_pred, sigamp):
     axs[1, 1].tick_params(axis="both", which="major", labelsize=ticksize)
     axs[1, 1].set_xlabel("Detector label", fontsize=fontsize)
 
-    plt.suptitle(f"CHI2 :{chi2:9.2f}", fontsize=20)
-    plt.show()
+    # Title + layout before save. Use fig.savefig (not plt.savefig) and close
+    # so FastAPI / headless runs don't leave a half-drawn canvas (tiny plot
+    # stuck in the corner of a blank 15×7 figure).
+    fig.suptitle(f"CHI2 :{chi2:9.2f}", fontsize=20, y=1.02)
+    fig.tight_layout()
+    fig.savefig(f"{plotname}.png", dpi=120, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
 
 
 def compute_chi2(vis, vis_pred, sigamp):

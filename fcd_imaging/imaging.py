@@ -15,7 +15,7 @@ from stixpy.calibration.visibility import calibrate_visibility
 from stixpy.coordinates.frames import STIXImaging
 from sunpy.map import Map, make_fitswcs_header
 
-from .aux_functions import Fourier_matrix_STIX, compute_chi2
+from .aux_functions import Fourier_matrix_STIX, compute_chi2, stx_plot_vis_fit
 
 # FCD was trained on 24 visibilities (rings 3–10, a/b/c each), not stixpy's full 30.
 # Label order matches fcd/integration_utils.py and the STIX L3A .sav training format.
@@ -28,9 +28,14 @@ def predict_image(cal_vis, fcd) -> list:
     """Run FCD on a (48,) Re/Im vector; return flattened 128×128 list."""
     if fcd is None:
         raise RuntimeError("FCD model not loaded")
+
     fcd_input = visibilities_to_fcd_input(cal_vis)
+    alpha = get_alpha(fcd_input, 2)
+    norm_vis = fcd_input / alpha
+    norm_img = np.squeeze(fcd.predict(np.expand_dims(norm_vis, axis=0), verbose=0))
+
     predicted = np.squeeze(fcd.predict(fcd_input.reshape(1, -1), verbose=0))
-    return predicted.tolist()
+    return predicted.tolist(), (norm_img * alpha).tolist(), norm_vis
 
 
 def rotate_image(flat_image: list[float], hpc_coord: SkyCoord, roll):
@@ -98,7 +103,7 @@ def visibilities_to_fcd_input(cal_vis) -> np.ndarray:
     return np.hstack((np.real(v), np.imag(v))).astype(np.float32)
 
 
-def calc_chi_score(cal_vis, image):
+def calc_chi_score(cal_vis, image, norm_img, norm_vis):
     """Reduced χ² between FCD image forward-vis and calibrated amplitudes.
 
     Builds the STIX Fourier matrix for the FCD (u,v) sampling, projects the
@@ -106,6 +111,7 @@ def calc_chi_score(cal_vis, image):
     Re/Im vector (``visibilities_to_fcd_input``) with amplitude uncertainties.
     """
     mem_im = np.array(image).reshape(128, 128)
+    norm_mem_im = np.array(norm_img).reshape(128, 128)
 
     labels = [str(label) for label in cal_vis.meta["vis_labels"]]
     idx = [labels.index(lab) for lab in FCD_VIS_LABELS]
@@ -114,10 +120,6 @@ def calc_chi_score(cal_vis, image):
     uu = cal_vis.u[idx].to(1 / u.arcsec).value
     vv = cal_vis.v[idx].to(1 / u.arcsec).value
     sigamp = np.asarray(cal_vis.amplitude_uncertainty[idx].to_value(), dtype=np.float64)
-    # TODO: check order
-    # make plot of amp of visibilities, take vis as input, plot amp of those,
-    # compare amp visibilities of reconstructed image
-    # send example to paolo with example, raw image,
 
     n_pix = 128  # FCD output size
     pix_size = 2.0  # arcsec / pixel
@@ -127,6 +129,24 @@ def calc_chi_score(cal_vis, image):
     dim = mem_im.shape
     vis_mem_ge = F @ np.reshape(mem_im, (dim[0] * dim[1]))
 
+    vis_mem_ge_norm = F @ np.reshape(norm_mem_im, (dim[0] * dim[1]))
+
     chi2 = float(compute_chi2(vis, vis_mem_ge, sigamp))
-    print(chi2)
-    return round(chi2, 2)
+
+    stx_plot_vis_fit(vis, vis_mem_ge, sigamp, "normal")
+    # α image is already scaled back (*α); compare to physical vis, not norm_vis
+    stx_plot_vis_fit(vis, vis_mem_ge_norm, sigamp, "scaled")
+
+    chi2_n = float(compute_chi2(vis, vis_mem_ge_norm, sigamp))
+
+    return round(chi2_n, 2)
+
+
+def get_alpha( vis_arr, pix_size ):
+    # Compute alpha for a single vis array
+    norm_vis = np.sqrt( np.square( vis_arr[:24] ) + np.square( vis_arr[24:] ) )
+    alpha = 2 * np.max( norm_vis ) / (pix_size * pix_size)
+    return alpha
+
+
+
