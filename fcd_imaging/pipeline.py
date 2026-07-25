@@ -4,7 +4,7 @@ import astropy.units as u
 from stixpy.coordinates.transforms import get_hpc_info
 from sunpy.coordinates import HeliographicStonyhurst
 
-from .coords import get_sun_radius, hpc_to_stix
+from .coords import get_hpc_coords, get_sun_radius, hpc_to_stix
 from .extract import extract_counts, extract_visibilities
 from .imaging import (
     calc_chi_score,
@@ -37,11 +37,19 @@ def run_imaging_pipeline(
         obstime=t_center,
         representation_type="cartesian",
     )
+    # convert mlp stix to hpc
+    mlp_hpc = get_hpc_coords(
+        pred_location,
+        t_center,
+        observer,
+    )
+
     # if user provides coords use those for imaging, else use mlp loc
     if user_hpc_x is not None and user_hpc_y is not None:
         phase_loc_stix = hpc_to_stix(
             float(user_hpc_x), float(user_hpc_y), t_center, observer
         )
+        
     cal_vis, phase_loc_hpc = calibrate_visibilities(
         vis, phase_loc_stix, t_center, observer
     )
@@ -52,11 +60,11 @@ def run_imaging_pipeline(
     result["rotated_image"] = rotated_image
     result["sun_radius"] = get_sun_radius(observer)
     result["chi_score"] = calc_chi_score(cal_vis, flat_image, norm_img, norm_vis)
-    result["mlp_stix_x"] = float(
-        pred_location["location_x_arcsec"]
-    )  ## TODO: rename, also in pred loc fun
+    result["mlp_stix_x"] = float(pred_location["location_x_arcsec"])
     result["mlp_stix_y"] = float(pred_location["location_y_arcsec"])
-    result["hpc_x"] = float(phase_loc_hpc.Tx.to_value(u.arcsec))
-    result["hpc_y"] = float(phase_loc_hpc.Ty.to_value(u.arcsec))
+    result["mlp_hpc_x"] = float(mlp_hpc.Tx.to_value(u.arcsec))
+    result["mlp_hpc_y"] = float(mlp_hpc.Ty.to_value(u.arcsec))
+    result["img_hpc_x"] = float(phase_loc_hpc.Tx.to_value(u.arcsec))
+    result["img_hpc_y"] = float(phase_loc_hpc.Ty.to_value(u.arcsec))
 
     return result
