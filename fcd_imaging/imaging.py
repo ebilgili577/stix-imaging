@@ -34,8 +34,7 @@ def predict_image(cal_vis, fcd) -> list:
     norm_vis = fcd_input / alpha
     norm_img = np.squeeze(fcd.predict(np.expand_dims(norm_vis, axis=0), verbose=0))
 
-    predicted = np.squeeze(fcd.predict(fcd_input.reshape(1, -1), verbose=0))
-    return predicted.tolist(), (norm_img * alpha).tolist(), norm_vis
+    return (norm_img * alpha).tolist()
 
 
 def rotate_image(flat_image: list[float], hpc_coord: SkyCoord, roll):
@@ -45,12 +44,12 @@ def rotate_image(flat_image: list[float], hpc_coord: SkyCoord, roll):
     WCS centered on ``hpc_coord`` with rotation_angle = 90° + Solo roll, then
     ``Map.rotate()`` produces a north-up array. Axis vectors ``x``/``y`` are
     world Tx/Ty [arcsec] along the mid-row / mid-column for Plotly.
-    """
-    img = np.array(flat_image).reshape(128, 128)
+        """
+    img = np.flipud(np.array(flat_image).reshape(128, 128))
 
     header_hp = make_fitswcs_header(
-        img,
-        hpc_coord,
+            img,
+            hpc_coord,
         scale=[2, 2] * u.arcsec / u.pix,
         rotation_angle=90 * u.deg + roll,
     )
@@ -103,15 +102,14 @@ def visibilities_to_fcd_input(cal_vis) -> np.ndarray:
     return np.hstack((np.real(v), np.imag(v))).astype(np.float32)
 
 
-def calc_chi_score(cal_vis, image, norm_img, norm_vis):
+def calc_chi_score(cal_vis, img):
     """Reduced χ² between FCD image forward-vis and calibrated amplitudes.
 
     Builds the STIX Fourier matrix for the FCD (u,v) sampling, projects the
     128×128 image to complex visibilities, and compares to the observed
     Re/Im vector (``visibilities_to_fcd_input``) with amplitude uncertainties.
     """
-    mem_im = np.array(image).reshape(128, 128)
-    norm_mem_im = np.array(norm_img).reshape(128, 128)
+    mem_im = np.array(img).reshape(128, 128)
 
     labels = [str(label) for label in cal_vis.meta["vis_labels"]]
     idx = [labels.index(lab) for lab in FCD_VIS_LABELS]
@@ -129,17 +127,11 @@ def calc_chi_score(cal_vis, image, norm_img, norm_vis):
     dim = mem_im.shape
     vis_mem_ge = F @ np.reshape(mem_im, (dim[0] * dim[1]))
 
-    vis_mem_ge_norm = F @ np.reshape(norm_mem_im, (dim[0] * dim[1]))
+    #stx_plot_vis_fit(vis, vis_mem_ge, sigamp, "scaled")
 
-    chi2 = float(compute_chi2(vis, vis_mem_ge, sigamp))
+    chi = float(compute_chi2(vis, vis_mem_ge, sigamp))
 
-    stx_plot_vis_fit(vis, vis_mem_ge, sigamp, "normal")
-    # α image is already scaled back (*α); compare to physical vis, not norm_vis
-    stx_plot_vis_fit(vis, vis_mem_ge_norm, sigamp, "scaled")
-
-    chi2_n = float(compute_chi2(vis, vis_mem_ge_norm, sigamp))
-
-    return round(chi2_n, 2)
+    return round(chi, 2)
 
 
 def get_alpha( vis_arr, pix_size ):
@@ -147,6 +139,3 @@ def get_alpha( vis_arr, pix_size ):
     norm_vis = np.sqrt( np.square( vis_arr[:24] ) + np.square( vis_arr[24:] ) )
     alpha = 2 * np.max( norm_vis ) / (pix_size * pix_size)
     return alpha
-
-
-
