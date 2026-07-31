@@ -26,7 +26,7 @@ def run_imaging_pipeline(
 ):
     result = {}
 
-    raw_counts = extract_counts(l1_json, selection)
+    raw_counts, selection_total_counts = extract_counts(l1_json, selection)
 
     pred_location = predict_location(raw_counts, mlp_model)
     vis, t_center = extract_visibilities(l1_json, selection)
@@ -66,5 +66,5 @@ def run_imaging_pipeline(
     result["mlp_hpc_y"] = float(mlp_hpc.Ty.to_value(u.arcsec))
     result["img_hpc_x"] = float(phase_loc_hpc.Tx.to_value(u.arcsec))
     result["img_hpc_y"] = float(phase_loc_hpc.Ty.to_value(u.arcsec))
-
+    result["selection_total_counts"] = float(selection_total_counts)
     return result

@@ -48,8 +48,17 @@ DETECTOR_ORDER = np.array(
 )
 
 
-def extract_counts(l1_json: dict, selection: Selection) -> np.ndarray:
-    """Sum big-pixel counts over time/energy; return (24, 8) in DETECTOR_ORDER.
+def extract_counts(
+    l1_json: dict, selection: Selection
+) -> tuple[np.ndarray, float]:
+    """Sum big-pixel counts over the selection time/energy window.
+
+    Returns
+    -------
+    counts : ndarray, shape (24, 8)
+        Imaging detectors in DETECTOR_ORDER; cols 0–7 = top abcd + bottom abcd.
+    selection_total_counts : float
+        Sum of those counts (24 imaging detectors, selected time + energy).
 
     Each L1 box contributes if its integration interval overlaps the selection
     time window and each energy sub-bin lies within [e_channel_min, e_channel_max].
@@ -71,8 +80,8 @@ def extract_counts(l1_json: dict, selection: Selection) -> np.ndarray:
             counts += _flat_to_big_pixel_counts(
                 np.asarray(energy_channel[3], dtype=np.float32),
             )
-    # Rows in DETECTOR_ORDER; cols 0–7 = top abcd + bottom abcd.
-    return counts[DETECTOR_ORDER - 1]
+    imaging = counts[DETECTOR_ORDER - 1]
+    return imaging, float(np.sum(imaging))
 
 
 def extract_visibilities(l1_json: dict, selection: Selection):
