@@ -10,7 +10,6 @@ data/
 # Keras weights are mounted at runtime, not baked into the image
 models/
 
-# PyTorch model checkpoint (not used by this service)
 *.pt
 
 # Git metadata

@@ -64,6 +64,12 @@ def run_imaging_pipeline(
     result["mlp_stix_y"] = float(pred_location["location_y_arcsec"])
     result["mlp_hpc_x"] = float(mlp_hpc.Tx.to_value(u.arcsec))
     result["mlp_hpc_y"] = float(mlp_hpc.Ty.to_value(u.arcsec))
+    result["p_outside_fov"] = pred_location["p_outside_fov"]
+    result["p_high_sidelobes"] = pred_location["p_high_sidelobes"]
+    result["p_unsupported_union"] = pred_location["p_unsupported_union"]
+    result["warning"] = pred_location["warning"]
+    result["warning_status"] = pred_location["warning_status"]
+    result["reasons"] = pred_location["reasons"]
     result["img_hpc_x"] = float(phase_loc_hpc.Tx.to_value(u.arcsec))
     result["img_hpc_y"] = float(phase_loc_hpc.Ty.to_value(u.arcsec))
     result["selection_total_counts"] = float(selection_total_counts)
