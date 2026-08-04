@@ -3,11 +3,13 @@ from __future__ import annotations
 import contextlib
 
 from config import settings
+import torch
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from tensorflow.keras.saving import load_model
+from tensorflow.keras.saving import load_model as load_keras_model
 
 from .filters import GaussianFilter
+from .location import load_localizer_model
 from .pipeline import run_imaging_pipeline
 from .schemas import ImagingRequest
 
@@ -18,17 +20,24 @@ fcd_model = None
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     global mlp_model, fcd_model
+    # One thread is faster for single predictions.
+    torch.set_num_threads(1)
+    print(f"[startup] PyTorch threads: {torch.get_num_threads()}", flush=True)
     mlp_path = settings.MODELS_DIR / settings.MLP_MODEL
     fcd_path = settings.MODELS_DIR / settings.FCD_MODEL
     try:
-        mlp_model = load_model(str(mlp_path), compile=False)
-        print(f"[startup] MLP loaded: {mlp_path}", flush=True)
-        print(f"[startup] MLP input shape: {mlp_model.input_shape}", flush=True)
+        mlp_model, metadata = load_localizer_model(mlp_path)
+        print(f"[startup] PyTorch localizer loaded: {mlp_path}", flush=True)
+        print(
+            f"[startup] Localizer input shape: "
+            f"{metadata['localizer']['input_shape']}",
+            flush=True,
+        )
     except Exception as exc:  # noqa: BLE001
         print(f"[startup] MLP load failed: {exc}", flush=True)
         mlp_model = None
     try:
-        fcd_model = load_model(
+        fcd_model = load_keras_model(
             str(fcd_path),
             custom_objects={"GaussianFilter": GaussianFilter},
             compile=False,

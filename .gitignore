@@ -1,6 +1,7 @@
 __pycache__/
 .vscode/
 *.keras
+*.pt
 viz-playground/
 data/
 .env
