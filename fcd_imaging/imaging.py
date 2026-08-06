@@ -22,6 +22,19 @@ from .aux_functions import Fourier_matrix_STIX, compute_chi2, stx_plot_vis_fit
 FCD_VIS_LABELS: tuple[str, ...] = tuple(
     f"{ring}{suffix}" for ring in range(10, 2, -1) for suffix in "abc"
 )
+FCD_IMAGE_PIXELS = 128
+
+
+def _crop_fixed_fov(data: np.ndarray, center_x: float, center_y: float) -> tuple[np.ndarray, int, int]:
+    """Crop a rotated image to the fixed 128×128 FCD field of view."""
+    height, width = data.shape
+    x0 = round(center_x - (FCD_IMAGE_PIXELS - 1) / 2)
+    y0 = round(center_y - (FCD_IMAGE_PIXELS - 1) / 2)
+    x1 = x0 + FCD_IMAGE_PIXELS
+    y1 = y0 + FCD_IMAGE_PIXELS
+    if x0 < 0 or y0 < 0 or x1 > width or y1 > height:
+        raise ValueError("Rotated image does not contain the full 256 arcsec FCD field of view")
+    return data[y0:y1, x0:x1], x0, y0
 
 
 def predict_image(cal_vis, fcd) -> list:
@@ -45,7 +58,7 @@ def rotate_image(flat_image: list[float], hpc_coord: SkyCoord, roll):
     ``Map.rotate()`` produces a north-up array. Axis vectors ``x``/``y`` are
     world Tx/Ty [arcsec] along the mid-row / mid-column for Plotly.
         """
-    img = np.flipud(np.array(flat_image).reshape(128, 128))
+    img = np.flipud(np.array(flat_image).reshape(FCD_IMAGE_PIXELS, FCD_IMAGE_PIXELS))
 
     header_hp = make_fitswcs_header(
             img,
@@ -54,9 +67,22 @@ def rotate_image(flat_image: list[float], hpc_coord: SkyCoord, roll):
         rotation_angle=90 * u.deg + roll,
     )
     hp_map = Map((img, header_hp))
-    hp_map_rotated = hp_map.rotate()
+    hp_map_rotated = hp_map.rotate(recenter=True)
 
-    # fill nan with 0z for json serialization
+    # Map.rotate expands the canvas to preserve its corners. Crop the expanded
+    # canvas around the image centre so every Quicklook covers 128 × 2″ = 256″.
+    height, width = hp_map_rotated.data.shape
+    data, x0, y0 = _crop_fixed_fov(
+        np.asarray(hp_map_rotated.data, dtype=np.float64),
+        (width - 1) / 2,
+        (height - 1) / 2,
+    )
+    cropped_meta = hp_map_rotated.meta.copy()
+    cropped_meta["CRPIX1"] -= x0
+    cropped_meta["CRPIX2"] -= y0
+    hp_map_rotated = Map((data, cropped_meta))
+
+    # Fill NaNs for JSON serialization.
     data = np.nan_to_num(np.asarray(hp_map_rotated.data, dtype=np.float64))
     ny, nx = data.shape
     px = np.arange(nx) * u.pix
