@@ -12,11 +12,7 @@ if your model filenames differ.
 FCD image model remains a Keras model. Both model files must be available in
 `MODELS_DIR`, which is mounted into the container at runtime.
 
-Download `fcd.keras` from [mervess/FCD-Solar](https://huggingface.co/mervess/FCD-Solar)
-and place it in `MODELS_DIR`. The model is not included in this repository.
-
-Download `stix_localizer_warning_v1.pt` from the project model release
-and place it in `MODELS_DIR`.
+Download the`FCD` from [mervess/FCD-Solar](https://huggingface.co/mervess/FCD-Solar) and localization model from [release 1.0.0](https://github.com/ebilgili577/stix-imaging/releases/tag/1.0.0). Place the models in `MODELS_DIR`. 
 
 ## Imaging response
 
