@@ -1,6 +1,6 @@
 import matplotlib
 
-matplotlib.use("Agg")  # headless-safe for FastAPI / pipeline PNG dumps
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -211,9 +211,7 @@ def stx_plot_vis_fit(vis, vis_pred, sigamp, plotname):
     axs[1, 1].tick_params(axis="both", which="major", labelsize=ticksize)
     axs[1, 1].set_xlabel("Detector label", fontsize=fontsize)
 
-    # Title + layout before save. Use fig.savefig (not plt.savefig) and close
-    # so FastAPI / headless runs don't leave a half-drawn canvas (tiny plot
-    # stuck in the corner of a blank 15×7 figure).
+   
     fig.suptitle(f"CHI2 :{chi2:9.2f}", fontsize=20, y=1.02)
     fig.tight_layout()
     fig.savefig(f"{plotname}.png", dpi=120, bbox_inches="tight", facecolor="white")

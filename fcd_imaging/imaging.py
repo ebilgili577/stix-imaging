@@ -17,24 +17,11 @@ from sunpy.map import Map, make_fitswcs_header
 
 from .aux_functions import Fourier_matrix_STIX, compute_chi2, stx_plot_vis_fit
 
-# FCD was trained on 24 visibilities (rings 3–10, a/b/c each), not stixpy's full 30.
+# FCD was trained on 24 visibilities (rings 3–10, a/b/c each).
 # Label order matches fcd/integration_utils.py and the STIX L3A .sav training format.
 FCD_VIS_LABELS: tuple[str, ...] = tuple(
     f"{ring}{suffix}" for ring in range(10, 2, -1) for suffix in "abc"
 )
-FCD_IMAGE_PIXELS = 128
-
-
-def _crop_fixed_fov(data: np.ndarray, center_x: float, center_y: float) -> tuple[np.ndarray, int, int]:
-    """Crop a rotated image to the fixed 128×128 FCD field of view."""
-    height, width = data.shape
-    x0 = round(center_x - (FCD_IMAGE_PIXELS - 1) / 2)
-    y0 = round(center_y - (FCD_IMAGE_PIXELS - 1) / 2)
-    x1 = x0 + FCD_IMAGE_PIXELS
-    y1 = y0 + FCD_IMAGE_PIXELS
-    if x0 < 0 or y0 < 0 or x1 > width or y1 > height:
-        raise ValueError("Rotated image does not contain the full 256 arcsec FCD field of view")
-    return data[y0:y1, x0:x1], x0, y0
 
 
 def predict_image(cal_vis, fcd) -> list:
@@ -55,10 +42,9 @@ def rotate_image(flat_image: list[float], hpc_coord: SkyCoord, roll):
 
     FCD output is a 128×128 STIX-oriented array at 2″/pix. We attach an HPC
     WCS centered on ``hpc_coord`` with rotation_angle = 90° + Solo roll, then
-    ``Map.rotate()`` produces a north-up array. Axis vectors ``x``/``y`` are
-    world Tx/Ty [arcsec] along the mid-row / mid-column for Plotly.
+    ``Map.rotate()`` produces a north-up array.
         """
-    img = np.flipud(np.array(flat_image).reshape(FCD_IMAGE_PIXELS, FCD_IMAGE_PIXELS))
+    img = np.flipud(np.array(flat_image).reshape(128, 128))
 
     header_hp = make_fitswcs_header(
             img,
@@ -67,27 +53,14 @@ def rotate_image(flat_image: list[float], hpc_coord: SkyCoord, roll):
         rotation_angle=90 * u.deg + roll,
     )
     hp_map = Map((img, header_hp))
-    hp_map_rotated = hp_map.rotate(recenter=True)
-
-    # Map.rotate expands the canvas to preserve its corners. Crop the expanded
-    # canvas around the image centre so every Quicklook covers 128 × 2″ = 256″.
-    height, width = hp_map_rotated.data.shape
-    data, x0, y0 = _crop_fixed_fov(
-        np.asarray(hp_map_rotated.data, dtype=np.float64),
-        (width - 1) / 2,
-        (height - 1) / 2,
-    )
-    cropped_meta = hp_map_rotated.meta.copy()
-    cropped_meta["CRPIX1"] -= x0
-    cropped_meta["CRPIX2"] -= y0
-    hp_map_rotated = Map((data, cropped_meta))
+    hp_map_rotated = hp_map.rotate()
 
     # Fill NaNs for JSON serialization.
     data = np.nan_to_num(np.asarray(hp_map_rotated.data, dtype=np.float64))
     ny, nx = data.shape
     px = np.arange(nx) * u.pix
     py = np.arange(ny) * u.pix
-    # Sample world coords along the image mid-axes (Plotly heatmap x/y).
+    # Sample world coords along the image mid-axes
     world_x = hp_map_rotated.pixel_to_world(px, np.full(nx, ny / 2) * u.pix)
     world_y = hp_map_rotated.pixel_to_world(np.full(ny, nx / 2) * u.pix, py)
     x = world_x.Tx.to_value(u.arcsec).tolist()
@@ -100,7 +73,7 @@ def rotate_image(flat_image: list[float], hpc_coord: SkyCoord, roll):
 
 
 def calibrate_visibilities(vis, location: dict, t_center, observer):
-    """calibrates visibilities for fcd input and returns the locations used for calibrating in hpc frame."""
+    """Calibrates visibilities for fcd input and returns the locations used for calibrating in HPC frame."""
     flare_loc = SkyCoord(
         location["location_x_arcsec"] * u.arcsec,
         location["location_y_arcsec"] * u.arcsec,
@@ -115,8 +88,7 @@ def visibilities_to_fcd_input(cal_vis) -> np.ndarray:
     """Convert stixpy Visibilities to the 48-dim vector the FCD model expects.
 
     stixpy returns 30 imaging visibilities (rings 1–10). FCD uses only the 24
-    coarsest rings (3–10) in label order 10a…10c, 9a…9c, …, 3a…3c, matching
-    the STIX L3A .sav format used during FCD training.
+    coarsest rings (3–10) in label order 10a…10c, 9a…9c, …, 3a…3c.
     Layout: [Re(24), Im(24)].
     """
     labels = [str(label) for label in cal_vis.meta["vis_labels"]]
